@@ -37,7 +37,7 @@ func Uint64ToByte(num uint64) []byte {
 	return buffer.Bytes()
 }
 
-//2.create ock
+//2.create block
 func NewBlock(data string, prevBlockHash []byte) *Block {
 	block := Block{
 		Version:    00,
@@ -49,6 +49,7 @@ func NewBlock(data string, prevBlockHash []byte) *Block {
 		Hash:       []byte{}, //empty,later compu //TODO
 		Data:       []byte(data),
 	}
+
 	block.SetHash()
 	return &block
 }
