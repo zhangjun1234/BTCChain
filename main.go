@@ -1,15 +1,11 @@
 package main
 
-import "fmt"
-
 func main() {
 	bc := CreateBlockChain()
-	bc.AddBlock("hello")
-	bc.AddBlock("no no no")
-	for i, block := range bc.blocks {
-		fmt.Printf("heigh: %d\n", i)
-		fmt.Printf("preHash: %x\n", block.PrevHash)
-		fmt.Printf("Hash: %x\n", block.Hash)
-		fmt.Printf("Data: %s\n", block.Data)
-	}
+	cli := CLI{bc: bc}
+	cli.Run()
+	//bc.AddBlock("11111111111111111111111")
+	//bc.AddBlock("22222222222222222222222")
+
+	//}
 }

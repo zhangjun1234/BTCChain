@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/gob"
 	"log"
 	"time"
 )
@@ -26,6 +27,26 @@ type Block struct {
 	Hash []byte
 	//b. 数据
 	Data []byte
+}
+
+func (block *Block) Serialize() []byte {
+	var buffer bytes.Buffer
+	encoder := gob.NewEncoder(&buffer)
+	err := encoder.Encode(&block)
+	if err != nil {
+		log.Panic(" encode err")
+	}
+	return buffer.Bytes()
+}
+
+func Deserialize(data []byte) Block {
+	decoder := gob.NewDecoder(bytes.NewReader(data))
+	var block Block
+	err := decoder.Decode(&block)
+	if err != nil {
+		log.Panic("decode err")
+	}
+	return block
 }
 
 //1. 补充区块字段
@@ -95,7 +116,7 @@ func (block *Block) SetHash() {
 		block.Data,
 	}
 
-	//将二维的切片数组链接起来，返回一个一维的切片
+/将二维的切片数组链接起来，返回一个一维的切片
 	blockInfo := bytes.Join(tmp, []byte{})
 
 	//2. sha256
