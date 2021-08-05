@@ -26,7 +26,8 @@ type Block struct {
 	//a. 当前区块哈希,正常比特币区块中没有当前区块的哈希，我们为了是方便做了简化！
 	Hash []byte
 	//b. 数据
-	Data []byte
+	//Data []byte
+	Transactions []*Transaction
 }
 
 func (block *Block) Serialize() []byte {
@@ -66,18 +67,18 @@ func Uint64ToByte(num uint64) []byte {
 }
 
 //2. 创建区块
-func NewBlock(data string, prevBlockHash []byte) *Block {
+func NewBlock(txs []*Transaction, prevBlockHash []byte) *Block {
 	block := Block{
-		Version:    00,
-		PrevHash:   prevBlockHash,
-		MerkelRoot: []byte{},
-		TimeStamp:  uint64(time.Now().Unix()),
-		Difficulty: 0, //随便填写的无效值
-		Nonce:      0, //同上
-		Hash:       []byte{},
-		Data:       []byte(data),
+		Version:      00,
+		PrevHash:     prevBlockHash,
+		MerkelRoot:   []byte{},
+		TimeStamp:    uint64(time.Now().Unix()),
+		Difficulty:   0, //随便填写的无效值
+		Nonce:        0, //同上
+		Hash:         []byte{},
+		Transactions: txs,
 	}
-
+	block.MerkelRoot = block.MakeMerkleRoot()
 	//block.SetHash()
 	//创建一个pow对象
 	pow := NewProofOfWork(&block)
@@ -89,6 +90,11 @@ func NewBlock(data string, prevBlockHash []byte) *Block {
 	block.Nonce = nonce
 
 	return &block
+}
+
+func (block *Block) MakeMerkleRoot() []byte {
+	//TODO
+	return []byte{}
 }
 
 /*

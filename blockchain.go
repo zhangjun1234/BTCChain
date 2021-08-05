@@ -2,6 +2,7 @@ package main
 
 import (
 	"BTClearn/bolt"
+	"fmt"
 	"log"
 )
 
@@ -20,7 +21,7 @@ type BlockChain struct {
 }
 
 //5 create BlockChain
-func CreateBlockChain() *BlockChain {
+func CreateBlockChain(address string) *BlockChain {
 	var db *bolt.DB
 	var lastHash []byte
 	/*1. 打开数据库(没有的话就创建)
@@ -44,7 +45,8 @@ func CreateBlockChain() *BlockChain {
 			if err != nil {
 				log.Panic("创建bucket失败")
 			}
-			genesisBlock := GenesisBlock()
+			genesisBlock := GenesisBlock(address)
+			fmt.Printf("genesis block = %s\n", genesisBlock)
 			bucket.Put(genesisBlock.Hash, []byte(genesisBlock.Serialize()))
 			bucket.Put([]byte(lastHashKey), genesisBlock.Hash)
 			lastHash = genesisBlock.Hash
@@ -57,12 +59,13 @@ func CreateBlockChain() *BlockChain {
 }
 
 //6.GenesisBlock
-func GenesisBlock() *Block {
-	return NewBlock("GenesisBlock", []byte{})
+func GenesisBlock(address string) *Block {
+	coinbase := NewCoinBaseTX(address, "GenesisBlock")
+	return NewBlock([]*Transaction{coinbase}, []byte{})
 }
 
 //7.add Block
-func (bc *BlockChain) AddBlock(data string) {
+func (bc *BlockChain) AddBlock(txs []*Transaction) {
 	db := bc.db
 	lashHash := bc.tail
 
@@ -73,14 +76,115 @@ func (bc *BlockChain) AddBlock(data string) {
 			log.Panic("打开bucket失败")
 		} else {
 			//创建新区块
-			block := NewBlock(data, lashHash)
+			block := NewBlock(txs, lashHash)
 			//将区块加入数据库
 			bucket.Put(block.Hash, block.Serialize())
-			bucket.Put([]byte(lastHashKey),block.Hash)
+			bucket.Put([]byte(lastHashKey), block.Hash)
 			//更新内存中的区块尾巴
 			bc.tail = block.Hash
 		}
 		return nil
 	})
 
+}
+
+//找到指定地址的所有的UTXO
+func (bc *BlockChain) FindUTXOs(address string) []TXOutput {
+	var UTXO []TXOutput
+	it := bc.NewIterator()
+	spentoutputs := make(map[string][]int64)
+	for {
+		block := it.Next()
+		for _, tx := range block.Transactions {
+			fmt.Printf("txid : %x\n", tx.TXID)
+
+			for i, output := range tx.TXOutputs {
+				fmt.Printf("current index : %d\n", i)
+				flag := true
+				if spentoutputs[string(tx.TXID)] != nil {
+					for _, j := range spentoutputs[string(tx.TXID)] {
+						if int64(i) == j {
+							flag = false
+							break
+						}
+					}
+				}
+
+				if (output.PubKeyHash == address) && (flag == true) {
+					UTXO = append(UTXO, output)
+				}
+			}
+
+			if !tx.IsCoinBase() {
+				for _, input := range tx.TXInputs {
+					if input.Sig == address {
+						indexArray := spentoutputs[string(input.TXid)]
+						indexArray = append(indexArray, input.Index)
+						spentoutputs[string(input.TXid)] = indexArray
+					}
+				}
+			}
+		}
+
+		if len(block.PrevHash) == 0 {
+			break
+		}
+	}
+	return UTXO
+}
+
+func (bc *BlockChain) FindNeedUtxos(from string, amount float64) (map[string][]uint64, float64) {
+	utxos := make(map[string][]uint64)
+	var cal float64
+
+	it := bc.NewIterator()
+	spentoutputs := make(map[string][]int64)
+	for {
+		block := it.Next()
+		for _, tx := range block.Transactions {
+			fmt.Printf("txid : %x\n", tx.TXID)
+
+			for i, output := range tx.TXOutputs {
+				fmt.Printf("current index : %d\n", i)
+				flag := true
+				if spentoutputs[string(tx.TXID)] != nil {
+					for _, j := range spentoutputs[string(tx.TXID)] {
+						if int64(i) == j {
+							flag = false
+							break
+						}
+					}
+				}
+
+				if (output.PubKeyHash == from) && (flag == true) {
+					if cal < amount {
+						utxos[string(tx.TXID)] = append(utxos[string(tx.TXID)], uint64(i))
+						cal += output.Value
+						if cal >= amount {
+							fmt.Println("找到了满足的金额")
+							return utxos, cal
+						}
+					} else {
+						fmt.Println("不满足转账金额")
+					}
+				}
+			}
+
+			if !tx.IsCoinBase() {
+				for _, input := range tx.TXInputs {
+					if input.Sig == from {
+						indexArray := spentoutputs[string(input.TXid)]
+						indexArray = append(indexArray, input.Index)
+						spentoutputs[string(input.TXid)] = indexArray
+					}
+				}
+			}
+		}
+
+		if len(block.PrevHash) == 0 {
+			break
+		}
+	}
+
+	return nil, 0
 }
