@@ -80,3 +80,5 @@ func (tx *Transaction) IsCoinBase() bool {
 	}
 	return false
 }
+
+

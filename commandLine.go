@@ -9,6 +9,7 @@ func (cli *CLI) printBlockChain() {
 		block := it.Next()
 		fmt.Printf("================================================\n\n\n")
 		fmt.Printf("preHash: %x\n", block.PrevHash)
+		fmt.Println("MerkelRootHash :",block.MerkelRoot)
 		fmt.Printf("Hash: %x\n", block.Hash)
 		fmt.Printf("Data: %s\n", block.Transactions[0].TXInputs[0].Sig)
 
@@ -39,12 +40,19 @@ func (cli *CLI) Send(from string, to string, amount float64, miner string, data 
 	//	//fmt.Printf("miner : %s\n",miner)
 	//	//fmt.Printf("data : %s\n",data)
 	// TODO
-	coinbase := NewCoinBaseTX(miner,data)
-	tx :=NewTransaction(from,to,amount,cli.bc)
-	if tx ==nil{
+	coinbase := NewCoinBaseTX(miner, data)
+	tx := NewTransaction(from, to, amount, cli.bc)
+	if tx == nil {
 		fmt.Println("无效的交易")
 		return
 	}
-	cli.bc.AddBlock([]*Transaction{coinbase,tx})
+	cli.bc.AddBlock([]*Transaction{coinbase, tx})
 	fmt.Println("转账成功！！！！")
+}
+
+func (cli *CLI) NewWallet() {
+	wallet := NewWallet()
+	fmt.Printf("私钥 ： %v\n",wallet.PrivateKey)
+	fmt.Printf("公钥 ： %v\n",wallet.PublicKey)
+	fmt.Printf("地址： %v\n",wallet.NewAddress())
 }

@@ -188,3 +188,48 @@ func (bc *BlockChain) FindNeedUtxos(from string, amount float64) (map[string][]u
 
 	return nil, 0
 }
+
+func (bc *BlockChain)GetUTXOTransaction(address string)[]*Transaction{
+	var txs []*Transaction
+
+	it := bc.NewIterator()
+	spentoutputs := make(map[string][]int64)
+	for {
+		block := it.Next()
+		for _, tx := range block.Transactions {
+			fmt.Printf("txid : %x\n", tx.TXID)
+
+			for i, output := range tx.TXOutputs {
+				fmt.Printf("current index : %d\n", i)
+				flag := true
+				if spentoutputs[string(tx.TXID)] != nil {
+					for _, j := range spentoutputs[string(tx.TXID)] {
+						if int64(i) == j {
+							flag = false
+							break
+						}
+					}
+				}
+
+				if (output.PubKeyHash == address) && (flag == true) {
+					txs = append(txs, tx)
+				}
+			}
+
+			if !tx.IsCoinBase() {
+				for _, input := range tx.TXInputs {
+					if input.Sig == address {
+						indexArray := spentoutputs[string(input.TXid)]
+						indexArray = append(indexArray, input.Index)
+						spentoutputs[string(input.TXid)] = indexArray
+					}
+				}
+			}
+		}
+
+		if len(block.PrevHash) == 0 {
+			break
+		}
+	}
+	return txs
+}

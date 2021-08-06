@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/binary"
 	"encoding/gob"
 	"log"
@@ -93,8 +94,12 @@ func NewBlock(txs []*Transaction, prevBlockHash []byte) *Block {
 }
 
 func (block *Block) MakeMerkleRoot() []byte {
-	//TODO
-	return []byte{}
+	info := []byte{}
+	for _,tx := range block.Transactions{
+		info = append(info,tx.TXID...)
+	}
+	hash := sha256.Sum256(info)
+	return hash[:]
 }
 
 /*
