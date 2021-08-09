@@ -1,13 +1,13 @@
 package main
 
 import (
-	"io/ioutil"
 	"bytes"
-	"encoding/gob"
-	"log"
 	"crypto/elliptic"
+	"encoding/gob"
+	"github.com/btcsuite/btcutil/base58"
+	"io/ioutil"
+	"log"
 	"os"
-	"go一期/lib/base58"
 )
 
 const walletFile = "wallet.dat"
@@ -104,7 +104,7 @@ func GetPubKeyFromAddress(address string) []byte {
 	addressByte := base58.Decode(address) //25字节
 	len := len(addressByte)
 
-	pubKeyHash := addressByte[1:len-4]
+	pubKeyHash := addressByte[1 : len-4]
 
 	return pubKeyHash
 }

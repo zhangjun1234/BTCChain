@@ -1,17 +1,17 @@
 package main
 
 import (
+	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"log"
 	"crypto/sha256"
-	//"golang.org/x/crypto/ripemd160"
-	"./lib/ripemd160"
-	//"github.com/btcsuite/btcutil/base58"
-	"./lib/base58"
 	"fmt"
-	"bytes"
+	"github.com/btcsuite/btcutil"
+	"log"
+	//"golang.org/x/crypto/ripemd160"
+	//"github.com/btcsuite/btcutil/base58"
+	"github.com/btcsuite/btcutil/base58"
 )
 
 //这里的钱包时一结构，每一个钱包保存了公钥,私钥对
@@ -47,7 +47,7 @@ func NewWallet() *Wallet {
 func (w *Wallet) NewAddress() string {
 	pubKey := w.PubKey
 
-	rip160HashValue := HashPubKey(pubKey)
+	rip160HashValue := btcutil.Hash160(pubKey)
 	version := byte(00)
 	//拼接version
 	payload := append([]byte{version}, rip160HashValue...)
@@ -62,22 +62,6 @@ func (w *Wallet) NewAddress() string {
 	address := base58.Encode(payload)
 
 	return address
-}
-
-func HashPubKey(data []byte) []byte {
-	hash := sha256.Sum256(data)
-
-	//理解为编码器
-	rip160hasher := ripemd160.New()
-	_, err := rip160hasher.Write(hash[:])
-
-	if err != nil {
-		log.Panic(err)
-	}
-
-	//返回rip160的哈希结果
-	rip160HashValue := rip160hasher.Sum(nil)
-	return rip160HashValue
 }
 
 func CheckSum(data []byte) []byte {
@@ -100,7 +84,7 @@ func IsValidAddress(address string) bool {
 
 	//2. 取数据
 	payload := addressByte[:len(addressByte)-4]
-	checksum1 := addressByte[len(addressByte)-4: ]
+	checksum1 := addressByte[len(addressByte)-4:]
 
 	//3. 做checksum函数
 	checksum2 := CheckSum(payload)

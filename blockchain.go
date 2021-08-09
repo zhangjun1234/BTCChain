@@ -1,12 +1,12 @@
 package main
 
 import (
-	"./lib/bolt"
-	"log"
-	"fmt"
+	"BTClearn/bolt"
 	"bytes"
-	"errors"
 	"crypto/ecdsa"
+	"errors"
+	"fmt"
+	"log"
 )
 
 //4. 引入区块链
@@ -237,8 +237,8 @@ func (bc *BlockChain) FindUTXOTransactions(senderPubKeyHash []byte) []*Transacti
 			//fmt.Printf("current txid : %x\n", tx.TXID)
 
 		OUTPUT:
-		//3. 遍历output，找到和自己相关的utxo(在添加output之前检查一下是否已经消耗过)
-		//	i : 0, 1, 2, 3
+			//3. 遍历output，找到和自己相关的utxo(在添加output之前检查一下是否已经消耗过)
+			//	i : 0, 1, 2, 3
 			for i, output := range tx.TXOutputs {
 				//fmt.Printf("current index : %d\n", i)
 				//在这里做一个过滤，将所有消耗过的outputs和当前的所即将添加output对比一下
@@ -283,7 +283,7 @@ func (bc *BlockChain) FindUTXOTransactions(senderPubKeyHash []byte) []*Transacti
 					//判断一下当前这个input和目标（李四）是否一致，如果相同，说明这个是李四消耗过的output,就加进来
 					//if input.Sig == address {
 					//if input.PubKey == senderPubKeyHash  //这是肯定不对的，要做哈希处理
-					pubKeyHash := HashPubKey(input.PubKey)
+					pubKeyHash := (input.PubKey)
 					if bytes.Equal(pubKeyHash, senderPubKeyHash) {
 						//spentOutputs := make(map[string][]int64)
 						//indexArray := spentOutputs[string(input.TXid)]

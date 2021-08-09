@@ -2,14 +2,15 @@ package main
 
 import (
 	"bytes"
-	"encoding/gob"
-	"log"
-	"crypto/sha256"
-	"fmt"
 	"crypto/ecdsa"
-	"crypto/rand"
-	"math/big"
 	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/gob"
+	"fmt"
+	"github.com/btcsuite/btcutil"
+	"log"
+	"math/big"
 	"strings"
 )
 
@@ -148,7 +149,7 @@ func NewTransaction(from, to string, amount float64, bc *BlockChain) *Transactio
 	privateKey := wallet.Private //稍后再用
 
 	//传递公钥的哈希，而不是传递地址
-	pubKeyHash := HashPubKey(pubKey)
+	pubKeyHash := btcutil.Hash160(pubKey)
 
 	//1. 找到最合理UTXO集合 map[string][]uint64
 	utxos, resValue := bc.FindNeedUTXOs(pubKeyHash, amount)
@@ -274,22 +275,20 @@ func (tx *Transaction) Verify(prevTXs map[string]Transaction) bool {
 		//3. 拆解PubKey, X, Y 得到原生公钥
 		pubKey := input.PubKey //拆，X, Y
 
-
 		//1. 定义两个辅助的big.int
 		r := big.Int{}
 		s := big.Int{}
 
 		//2. 拆分我们signature，平均分，前半部分给r, 后半部分给s
-		r.SetBytes(signature[:len(signature)/2 ])
+		r.SetBytes(signature[:len(signature)/2])
 		s.SetBytes(signature[len(signature)/2:])
-
 
 		//a. 定义两个辅助的big.int
 		X := big.Int{}
 		Y := big.Int{}
 
 		//b. pubKey，平均分，前半部分给X, 后半部分给Y
-		X.SetBytes(pubKey[:len(pubKey)/2 ])
+		X.SetBytes(pubKey[:len(pubKey)/2])
 		Y.SetBytes(pubKey[len(pubKey)/2:])
 
 		//还原原始的公钥
@@ -318,7 +317,7 @@ func (tx Transaction) String() string {
 		lines = append(lines, fmt.Sprintf("       PubKey:    %x", input.PubKey))
 	}
 
-	for i, output := range tx.TXOutputs{
+	for i, output := range tx.TXOutputs {
 		lines = append(lines, fmt.Sprintf("     Output %d:", i))
 		lines = append(lines, fmt.Sprintf("       Value:  %f", output.Value))
 		lines = append(lines, fmt.Sprintf("       Script: %x", output.PubKeyHash))
@@ -326,5 +325,3 @@ func (tx Transaction) String() string {
 
 	return strings.Join(lines, "\n")
 }
-
-
