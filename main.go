@@ -1,11 +1,9 @@
 package main
 
-func main() {
-	bc := CreateBlockChain("zj")
-	cli := CLI{bc: bc}
-	cli.Run()
-	//bc.AddBlock("11111111111111111111111")
-	//bc.AddBlock("22222222222222222222222")
+//import "fmt"
 
-	//}
+func main() {
+	bc := NewBlockChain("14PxkwD8cTpzNAT1PYXRwK4qRNbkBVtgFP")
+	cli := CLI{bc}
+	cli.Run()
 }

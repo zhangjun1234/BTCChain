@@ -1,69 +1,76 @@
 package main
 
 import (
-	"fmt"
 	"os"
+	"fmt"
 	"strconv"
 )
+
+//这是一个用来接收命令行参数并且控制区块链操作的文件
 
 type CLI struct {
 	bc *BlockChain
 }
 
 const Usage = `
-	addBlock --data DATA  "add data to blockchain"
-	printChain            "print all data from blockchain"
-	getBalance --address ADDRESS "返回指定地址的余额"
-	send FROM TO AMOUNT MINER DATA "由from 转账给 to 由 miner 挖矿"
-	newWallet  "创建一个新的钱包"
+	printChain               "正向打印区块链"
+	printChainR              "反向打印区块链"
+	getBalance --address ADDRESS "获取指定地址的余额"
+	send FROM TO AMOUNT MINER DATA "由FROM转AMOUNT给TO，由MINER挖矿，同时写入DATA"
+	newWallet   "创建一个新的钱包(私钥公钥对)"
 	listAddresses "列举所有的钱包地址"
 `
 
+//接受参数的动作，我们放到一个函数中
+
 func (cli *CLI) Run() {
-	//1.得到命令
+
+	//./block printChain
+	//./block addBlock --data "HelloWorld"
+	//1. 得到所有的命令
 	args := os.Args
 	if len(args) < 2 {
 		fmt.Printf(Usage)
 		return
 	}
+
+	//2. 分析命令
 	cmd := args[1]
 	switch cmd {
-	case "addBlock":
-		fmt.Println("add block")
-		if args[2] == "--data" && len(args) == 4 {
-			data := args[3]
-			cli.AddBlock(data)
-		}
 	case "printChain":
-		cli.printBlockChain()
+		fmt.Printf("正向打印区块\n")
+		cli.PrinBlockChain()
+	case "printChainR":
+		fmt.Printf("反向打印区块\n")
+		cli.PrinBlockChainReverse()
 	case "getBalance":
-		fmt.Println("getBalance")
-		if args[2] == "--address" && len(args) == 4 {
+		fmt.Printf("获取余额\n")
+		if len(args) == 4 && args[2] == "--address" {
 			address := args[3]
 			cli.GetBalance(address)
 		}
 	case "send":
-		fmt.Println("转账开始")
+		fmt.Printf("转账开始...\n")
 		if len(args) != 7 {
-			fmt.Println("参数不足")
-			fmt.Println(Usage)
+			fmt.Printf("参数个数错误，请检查！\n")
+			fmt.Printf(Usage)
 			return
 		}
+		//./block send FROM TO AMOUNT MINER DATA "由FROM转AMOUNT给TO，由MINER挖矿，同时写入DATA"
 		from := args[2]
 		to := args[3]
-		amount, _ := strconv.ParseFloat(os.Args[4], 64)
+		amount, _ := strconv.ParseFloat(args[4], 64) //知识点，请注意
 		miner := args[5]
 		data := args[6]
 		cli.Send(from, to, amount, miner, data)
 	case "newWallet":
-		fmt.Println("创建钱包开始........")
+		fmt.Printf("创建新的钱包...\n")
 		cli.NewWallet()
 	case "listAddresses":
-		fmt.Println("列举所有钱包地址开始.......")
-		cli.ListAllAddresses()
+		fmt.Printf("列举所有地址...\n")
+		cli.ListAddresses()
 	default:
-		fmt.Println("lalalalalalalalal")
+		fmt.Printf("无效的命令，请检查!\n")
+		fmt.Printf(Usage)
 	}
 }
-
-

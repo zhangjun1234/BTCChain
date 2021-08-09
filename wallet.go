@@ -4,47 +4,110 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"crypto/sha256"
-	"github.com/btcsuite/btcutil"
-	"github.com/btcsuite/btcutil/base58"
 	"log"
+	"crypto/sha256"
+	//"golang.org/x/crypto/ripemd160"
+	"./lib/ripemd160"
+	//"github.com/btcsuite/btcutil/base58"
+	"./lib/base58"
+	"fmt"
+	"bytes"
 )
 
+//这里的钱包时一结构，每一个钱包保存了公钥,私钥对
+
 type Wallet struct {
-	PrivateKey *ecdsa.PrivateKey
-	PublicKey  []byte
+	//私钥
+	Private *ecdsa.PrivateKey
+	//PubKey *ecdsa.PublicKey
+	//约定，这里的PubKey不存储原始的公钥，而是存储X和Y拼接的字符串，在校验端重新拆分（参考r,s传递）
+	PubKey []byte //
 }
 
-func  NewWallet() *Wallet {
+//创建钱包
+func NewWallet() *Wallet {
+	//创建曲线
 	curve := elliptic.P256()
-	privateKey ,err:= ecdsa.GenerateKey(curve,rand.Reader)
-	if err != nil{
+	//生成私钥
+	privateKey, err := ecdsa.GenerateKey(curve, rand.Reader)
+	if err != nil {
 		log.Panic()
 	}
-	publicKeyOrig := privateKey.PublicKey
-	publicKey := append(publicKeyOrig.X.Bytes(),publicKeyOrig.Y.Bytes()...)
-	return &Wallet{PrivateKey: privateKey,PublicKey: publicKey}
+
+	//生成公钥
+	pubKeyOrig := privateKey.PublicKey
+
+	//拼接X, Y
+	pubKey := append(pubKeyOrig.X.Bytes(), pubKeyOrig.Y.Bytes()...)
+
+	return &Wallet{Private: privateKey, PubKey: pubKey}
 }
 
-func (w *Wallet) NewAddress()string{
-	publicKey := w.PublicKey
-	rip160hash := btcutil.Hash160(publicKey)
-	//hash := sha256.Sum256(publicKey)
-	//riphasher := crypto.RIPEMD160.New()
-	//_,err :=riphasher.Write(hash[:])
-	//if err != nil{
-	//	log.Panic(err)
-	//}
-	//rip160hash := riphasher.Sum(nil)
+//生成地址
+func (w *Wallet) NewAddress() string {
+	pubKey := w.PubKey
 
+	rip160HashValue := HashPubKey(pubKey)
 	version := byte(00)
-	payload := append([]byte{version},rip160hash...)
+	//拼接version
+	payload := append([]byte{version}, rip160HashValue...)
 
-	hash1 :=sha256.Sum256(payload)
-	hash2 := sha256.Sum256(hash1[:])
-	checkCode := hash2[:4]
+	//checksum
+	checkCode := CheckSum(payload)
 
-	payload = append(payload,checkCode...)
+	//25字节数据
+	payload = append(payload, checkCode...)
+
+	//go语言有一个库，叫做btcd,这个是go语言实现的比特币全节点源码
 	address := base58.Encode(payload)
+
 	return address
+}
+
+func HashPubKey(data []byte) []byte {
+	hash := sha256.Sum256(data)
+
+	//理解为编码器
+	rip160hasher := ripemd160.New()
+	_, err := rip160hasher.Write(hash[:])
+
+	if err != nil {
+		log.Panic(err)
+	}
+
+	//返回rip160的哈希结果
+	rip160HashValue := rip160hasher.Sum(nil)
+	return rip160HashValue
+}
+
+func CheckSum(data []byte) []byte {
+	//两次sha256
+	hash1 := sha256.Sum256(data)
+	hash2 := sha256.Sum256(hash1[:])
+
+	//前4字节校验码
+	checkCode := hash2[:4]
+	return checkCode
+}
+
+func IsValidAddress(address string) bool {
+	//1. 解码
+	addressByte := base58.Decode(address)
+
+	if len(addressByte) < 4 {
+		return false
+	}
+
+	//2. 取数据
+	payload := addressByte[:len(addressByte)-4]
+	checksum1 := addressByte[len(addressByte)-4: ]
+
+	//3. 做checksum函数
+	checksum2 := CheckSum(payload)
+
+	fmt.Printf("checksum1 : %x\n", checksum1)
+	fmt.Printf("checksum2 : %x\n", checksum2)
+
+	//4. 比较
+	return bytes.Equal(checksum1, checksum2)
 }

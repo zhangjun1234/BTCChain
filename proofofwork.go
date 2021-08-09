@@ -1,10 +1,10 @@
 package main
 
 import (
+	"math/big"
 	"bytes"
 	"crypto/sha256"
 	"fmt"
-	"math/big"
 )
 
 //定义一个工作量证明的结构ProofOfWork
@@ -63,8 +63,8 @@ func (pow *ProofOfWork) Run() ([]byte, uint64) {
 			Uint64ToByte(block.TimeStamp),
 			Uint64ToByte(block.Difficulty),
 			Uint64ToByte(nonce),
+			//只对区块头做哈希值，区块体通过MerkelRoot产生影响
 			//block.Data,
-
 		}
 
 		//将二维的切片数组链接起来，返回一个一维的切片
